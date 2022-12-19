@@ -2,103 +2,99 @@ package com.mite.mitefcadmin;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.mite.mitefcadmin.transaction.MyAdapter;
+import com.mite.mitefcadmin.transaction.Trans;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
 
 public class Home extends AppCompatActivity {
 
-    EditText amtText;
-    TextView mealsAmt;
-    Button updateBtn;
-    String amount;
 
-    DatabaseReference reference;
+
+    DatabaseReference transReference;
+    RecyclerView recyclerView;
+    MyAdapter myAdapter;
+    ArrayList<Trans> list;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        amtText = findViewById(R.id.amtText);
-        updateBtn = findViewById(R.id.updateBtn);
-        mealsAmt = findViewById(R.id.mealsAmt);
+        transReference = FirebaseDatabase.getInstance().getReference().child("alltransaction");
 
-        reference = FirebaseDatabase.getInstance().getReference();
+        recyclerView = findViewById(R.id.transList);
+        recyclerView.setHasFixedSize(true);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        linearLayoutManager.setReverseLayout(true);
+        linearLayoutManager.setStackFromEnd(true);
+        recyclerView.setLayoutManager(linearLayoutManager);
 
-        updateBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                amount = amtText.getText().toString();
-                updateMealAmt(amount);
-            }
-        });
+        list = new ArrayList<>();
+        myAdapter = new MyAdapter(this,list);
+        recyclerView.setAdapter(myAdapter);
 
     }
 
-    private void fetchMealsAmt() {
-        reference.child("admin").child("mealsAmt").addListenerForSingleValueEvent(new ValueEventListener() {
+    private void showTransaction() {
+        list.clear();
+        recyclerView.setAdapter(myAdapter);
+        transReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
-                    Map<String, Object> map = (Map<String, Object>) snapshot.getValue();
-                    String mealsamt = String.valueOf(map.get("amount"));
-                    mealsAmt.setText("Meals : "+mealsamt);
+                    for (DataSnapshot data : snapshot.getChildren()) {
+                        Log.d("DATA", data.getValue().toString());
+                        String USN, amount, date, mode, utr;
+                        USN = data.child("USN").getValue().toString();
+                        amount = data.child("amount").getValue().toString();
+                        date = data.child("date").getValue().toString();
+                        mode = data.child("mode").getValue().toString();
+                        utr = data.child("utr").getValue().toString();
+                        USN = "USN :"+USN;
+                        if (mode.equals("credit")) {
+                            amount = "+"+amount+" rs";
+                        } else {
+                            amount = "-"+amount+" rs";
+                        }
+                        date = "Date :"+date.substring(0,10) +", "+ date.substring(14,19);
+                        utr = "utr no :"+utr;
+
+                        Trans trans = new Trans();
+                        trans.setUSN(USN);
+                        trans.setAmount(amount);
+                        trans.setDate(date);
+                        trans.setMode(mode);
+                        trans.setUtr(utr);
+                        list.add(trans);
+                    }
+                    //Log.d("LIST DATA:", list.toString());
+                    myAdapter.notifyDataSetChanged();
+                } else {
+                    recyclerView.setAdapter(null);
+                    //  Toast.makeText(Home.this, "No Transaction Exist", Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Log.d("ERROR", error.getMessage());
+                Log.d("DataBase ERROR :", error.getMessage());
             }
         });
-    }
-
-    private void updateMealAmt(String amount) {
-        int intNewAmt = 0;
-        try {
-            intNewAmt = Integer.parseInt(amount);
-        } catch (NumberFormatException e){
-            Log.d("ERROR PARSEING", e.getMessage());
-        }
-        if (intNewAmt == 0) {
-            amtText.setError("please enter proper number");
-        } else {
-            DatabaseReference databaseReference = reference.child("admin").child("mealsAmt");
-
-            Map map = new HashMap();
-            map.put("amount", intNewAmt);
-
-            databaseReference.updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
-                @Override
-                public void onComplete(@NonNull Task task) {
-                    if (task.isSuccessful()) {
-                        amtText.setText(null);
-                        Toast.makeText(getApplicationContext(), "Updated", Toast.LENGTH_SHORT).show();
-                        context();
-                    } else {
-                        Log.d("ERROR", task.getException().getMessage());
-                    }
-                }
-            });
-        }
     }
 
     private void context() {
@@ -109,7 +105,6 @@ public class Home extends AppCompatActivity {
         final Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                fetchMealsAmt();
                 context();
             }
         };
@@ -119,6 +114,25 @@ public class Home extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        fetchMealsAmt();
+        showTransaction();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = new MenuInflater(this);
+        inflater.inflate(R.menu.menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.update: Intent i = new Intent(getBaseContext(), updateAmt.class);
+            startActivity(i);
+            break;
+
+            case R.id.exit: System.exit(0);
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
