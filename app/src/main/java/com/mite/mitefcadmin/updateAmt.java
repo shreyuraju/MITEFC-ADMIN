@@ -36,6 +36,7 @@ public class updateAmt extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_update_amt);
+        getSupportActionBar().setTitle("Update Meal Amount");
 
         amtText = findViewById(R.id.amtText);
         updateBtn = findViewById(R.id.updateBtn);
