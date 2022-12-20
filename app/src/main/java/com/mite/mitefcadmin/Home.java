@@ -37,6 +37,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -121,7 +123,6 @@ public class Home extends AppCompatActivity {
 
     public void updateNewBalance(String studentUSN, String studentBal, int mealsAmt) {
         int newStudBal=0;
-        reference = FirebaseDatabase.getInstance().getReference().child("users").child(studentUSN);
         try {
             newStudBal = Integer.parseInt(studentBal);
         } catch (Exception e) {
@@ -131,11 +132,11 @@ public class Home extends AppCompatActivity {
             newStudBal = newStudBal - mealsAmt;
             Map map = new HashMap();
             map.put("balance", newStudBal);
-
-            reference.updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
+            reference.child("users").child(studentUSN).updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
                 @Override
                 public void onComplete(@NonNull Task task) {
                     if (task.isSuccessful()) {
+                        addToTransaction(studentUSN, mealsAmt);
                         Toast.makeText(Home.this, "Token issued", Toast.LENGTH_SHORT).show();
                     } else {
                         Log.d("BALANCE UPDATION FAILED", task.getException().getMessage());
@@ -145,6 +146,47 @@ public class Home extends AppCompatActivity {
         } else {
             Toast.makeText(this, "Balance is less than meals amount", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void addToTransaction(String studentUSN, int mealsAmt) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss z");
+        String currentDandT = sdf.format(new Date());
+        String date= currentDandT.substring(15,22);
+        String utr = currentDandT.substring(0,10);
+        utr = utr.replaceAll("\\p{Punct}", "");
+        date = date.replaceAll("\\p{Punct}","");
+        utr = studentUSN+utr+date;
+        Map map = new HashMap();
+        map.put("mode","debit");
+        map.put("USN", studentUSN);
+        map.put("amount", mealsAmt);
+        map.put("utr", utr);
+        map.put("date",currentDandT);
+
+        reference.child("transaction").child(studentUSN).push().updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
+            @Override
+            public void onComplete(@NonNull Task task) {
+                if (task.isSuccessful()) {
+                    addToAllTransaction(map);
+                } else {
+                    Log.d("ERROR :", task.getException().getMessage());
+                }
+            }
+        });
+
+    }
+
+    private void addToAllTransaction(Map map) {
+        reference.child("admin").child("alltransaction").push().updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
+            @Override
+            public void onComplete(@NonNull Task task) {
+                if (task.isSuccessful()) {
+                    //Toast.makeText(Home.this, "Successfull", Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.d("ERROR :", task.getException().getMessage());
+                }
+            }
+        });
     }
 
     private void readFromNFC(Tag tag, Intent intent) {
