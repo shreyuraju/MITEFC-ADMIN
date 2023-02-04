@@ -18,6 +18,7 @@ import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
 import android.nfc.tech.NfcA;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -52,6 +53,7 @@ public class Home extends AppCompatActivity {
     ProgressDialog progressDialog;
     String studentUSN=null, studentBal=null;
 
+    boolean isPressed = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -370,8 +372,26 @@ public class Home extends AppCompatActivity {
 
             case R.id.transaction: startActivity(new Intent(this, Transactions.class)); break;
 
-            case R.id.exit: System.exit(0);
+            //case R.id.exit: System.exit(0);
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if(isPressed) {
+            finishAffinity();
+            System.exit(0);
+        } else {
+            Toast.makeText(this, "Press again to Exit", Toast.LENGTH_SHORT).show();
+            isPressed = true;
+        }
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                isPressed = false;
+            }
+        };
+        new Handler().postDelayed(runnable,2000);
     }
 }

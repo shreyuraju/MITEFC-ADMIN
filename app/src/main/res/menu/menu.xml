@@ -4,6 +4,6 @@
         android:title="update" />
     <item android:id="@+id/transaction"
         android:title="Show\nTransaction" />
-    <item android:id="@+id/exit"
-        android:title="Exit" />
+    <!-- <item android:id="@+id/exit"
+        android:title="Exit" /> -->
 </menu>
