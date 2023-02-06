@@ -165,32 +165,19 @@ public class Home extends AppCompatActivity {
         map.put("utr", utr);
         map.put("date",currentDandT);
 
-        reference.child("transaction").child(studentUSN).push().updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
-            @Override
-            public void onComplete(@NonNull Task task) {
-                if (task.isSuccessful()) {
-                    addToAllTransaction(map);
-                } else {
-                    Log.d("ERROR :", task.getException().getMessage());
-                }
-            }
-        });
-
-    }
-
-    private void addToAllTransaction(Map map) {
         reference.child("admin").child("alltransaction").push().updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
             @Override
             public void onComplete(@NonNull Task task) {
                 if (task.isSuccessful()) {
-                    //Toast.makeText(Home.this, "Successfull", Toast.LENGTH_SHORT).show();
+                    
                 } else {
                     Log.d("ERROR :", task.getException().getMessage());
                 }
             }
         });
-    }
 
+    }
+    
     private void readFromNFC(Tag tag, Intent intent) {
         progressDialog.setTitle("Reading");
         progressDialog.setMessage("Please Wait");
@@ -326,6 +313,8 @@ public class Home extends AppCompatActivity {
         patchTag(tag);
         if (tag != null) {
             readFromNFC(tag, intent);
+        } else {
+            Toast.makeText(this, "NOT REGISTERED", Toast.LENGTH_SHORT).show();
         }
 
     }
