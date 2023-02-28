@@ -53,6 +53,8 @@ public class Home extends AppCompatActivity {
     ProgressDialog progressDialog;
     String studentUSN=null, studentBal=null;
 
+    String NFCUID=null;
+
     boolean isPressed = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -133,8 +135,10 @@ public class Home extends AppCompatActivity {
         if (newStudBal>=mealsAmt){
             newStudBal = newStudBal - mealsAmt;
             Map map = new HashMap();
+           // map.put("NFCUID",NFCUID);
+           // map.put("USN", studentUSN);
             map.put("balance", newStudBal);
-            reference.child("users").child(studentUSN).updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
+            reference.child("users").child(NFCUID).updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
                 @Override
                 public void onComplete(@NonNull Task task) {
                     if (task.isSuccessful()) {
@@ -206,7 +210,7 @@ public class Home extends AppCompatActivity {
                         //studentUSN = text;
                         Log.e("tag", "vahid  -->  " + text);
                         progressDialog.dismiss();
-                        checkUser(text);
+                        checkUser(NFCUID);
                         ndef.close();
                     }
                 } else {
@@ -226,7 +230,7 @@ public class Home extends AppCompatActivity {
 
                             Log.d("DATA : ", message);
                             progressDialog.dismiss();
-                            checkUser(message);
+                            checkUser(NFCUID);
                             ndef.close();
                         } else {
                             Toast.makeText(this, "Not able to read from NFC, Please try again...", Toast.LENGTH_LONG).show();
@@ -309,6 +313,12 @@ public class Home extends AppCompatActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+
+        if (intent.getAction().equals(NfcAdapter.ACTION_TAG_DISCOVERED)) {
+            NFCUID = ByteArrayToHexString(intent.getByteArrayExtra(NfcAdapter.EXTRA_ID));
+            Log.d("NFC TAG UID","NFC Tag UID :" + ByteArrayToHexString(intent.getByteArrayExtra(NfcAdapter.EXTRA_ID)));
+        }
+
         Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
         patchTag(tag);
         if (tag != null) {
@@ -316,7 +326,22 @@ public class Home extends AppCompatActivity {
         } else {
             Toast.makeText(this, "NOT REGISTERED", Toast.LENGTH_SHORT).show();
         }
+    }
 
+    private String ByteArrayToHexString(byte[] byteArrayExtra) {
+        int i, j, in;
+        String [] hex = {"0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"};
+        String out= "";
+
+        for(j = 0 ; j < byteArrayExtra.length ; ++j)
+        {
+            in = (int) byteArrayExtra[j] & 0xff;
+            i = (in >> 4) & 0x0f;
+            out += hex[i];
+            i = in & 0x0f;
+            out += hex[i];
+        }
+        return out;
     }
 
     //on pause and on resume of NFC Activity
@@ -334,7 +359,7 @@ public class Home extends AppCompatActivity {
         IntentFilter techDetected = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);
         IntentFilter[] nfcIntentFilter = new IntentFilter[]{techDetected, tagDetected, ndefDetected};
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_MUTABLE);
         if (nfcAdapter != null)
             nfcAdapter.enableForegroundDispatch(this, pendingIntent, nfcIntentFilter, null);
     }
