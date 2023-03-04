@@ -30,12 +30,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -55,6 +60,8 @@ public class Home extends AppCompatActivity {
 
     String NFCUID=null;
 
+    FirebaseFirestore firestoreDb;
+
     boolean isPressed = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +69,7 @@ public class Home extends AppCompatActivity {
         setContentView(R.layout.activity_home);
         getSupportActionBar().setTitle("FC ADMIN");
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        firestoreDb = FirebaseFirestore.getInstance();
         reference = FirebaseDatabase.getInstance().getReference();
         userReference = FirebaseDatabase.getInstance().getReference().child("users");
         progressDialog = new ProgressDialog(this);
@@ -93,7 +101,42 @@ public class Home extends AppCompatActivity {
     }
 
     //checking balance data from database
-    private void checkUser(String text) {
+    private void checkUser(String nfcuid) {
+        progressDialog.setTitle("Fetching");
+        progressDialog.setMessage("Please Wait");
+        progressDialog.setCanceledOnTouchOutside(true);
+        progressDialog.show();
+
+        DocumentReference document = firestoreDb.collection("users").document(nfcuid);
+
+        document.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+
+                    @Override
+                    public void onSuccess(DocumentSnapshot documentSnapshot) {
+
+                        if(documentSnapshot.exists()) {
+                            String NFCUSN = documentSnapshot.getString("USN");
+                            progressDialog.dismiss();
+                            checkData(NFCUSN);
+
+                        } else {
+                            progressDialog.dismiss();
+                            Toast.makeText(getBaseContext(),"data not found" , Toast.LENGTH_SHORT).show();
+                        }
+
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        progressDialog.dismiss();
+                        Toast.makeText(getBaseContext(),"user not found" , Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+    }
+
+    private void checkData(String text) {
         progressDialog.setTitle("Fetching");
         progressDialog.setMessage("Please Wait");
         progressDialog.setCanceledOnTouchOutside(true);
@@ -138,7 +181,7 @@ public class Home extends AppCompatActivity {
            // map.put("NFCUID",NFCUID);
            // map.put("USN", studentUSN);
             map.put("balance", newStudBal);
-            reference.child("users").child(NFCUID).updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
+            reference.child("users").child(studentUSN).updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
                 @Override
                 public void onComplete(@NonNull Task task) {
                     if (task.isSuccessful()) {
