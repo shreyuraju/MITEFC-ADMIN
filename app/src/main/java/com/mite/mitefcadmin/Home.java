@@ -198,13 +198,14 @@ public class Home extends AppCompatActivity {
     }
 
     private void addToTransaction(String studentUSN, int mealsAmt) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss z");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
         String currentDandT = sdf.format(new Date());
         String date= currentDandT.substring(15,22);
         String utr = currentDandT.substring(0,10);
         utr = utr.replaceAll("\\p{Punct}", "");
         date = date.replaceAll("\\p{Punct}","");
         utr = studentUSN+utr+date;
+
         Map map = new HashMap();
         map.put("mode","debit");
         map.put("USN", studentUSN);
