@@ -54,28 +54,30 @@ public class Transactions extends AppCompatActivity {
                 list.clear();
                 if (snapshot.exists()) {
                     for (DataSnapshot data : snapshot.getChildren()) {
-                        Log.d("DATA", data.getValue().toString());
-                        String USN, amount, date, mode, utr;
-                        USN = data.child("USN").getValue().toString();
-                        amount = data.child("amount").getValue().toString();
-                        date = data.child("date").getValue().toString();
-                        mode = data.child("mode").getValue().toString();
-                        utr = data.child("utr").getValue().toString();
-                        USN = "USN :"+USN;
-                        if (mode.equals("credit")) {
-                            amount = "+"+amount+" rs";
-                        } else {
-                            amount = "-"+amount+" rs";
+                        //Log.d("DATA", data.getValue().toString());
+                        if (data.child("USN").getValue() != null) {
+                            String USN, amount, date, mode, utr;
+                            USN = data.child("USN").getValue().toString();
+                            amount = data.child("amount").getValue().toString();
+                            date = data.child("date").getValue().toString();
+                            mode = data.child("mode").getValue().toString();
+                            utr = data.child("utr").getValue().toString();
+                            USN = "USN :"+USN;
+                            if (mode.equals("credit")) {
+                                amount = "+"+amount+" rs";
+                            } else {
+                                amount = "-"+amount+" rs";
+                            }
+                            date = "Date :"+date.substring(0,10) +" "+ date.substring(11,16);
+                            utr = "utr no :"+utr;
+                            Trans trans = new Trans();
+                            trans.setUSN(USN);
+                            trans.setAmount(amount);
+                            trans.setDate(date);
+                            trans.setMode(mode);
+                            trans.setUtr(utr);
+                            list.add(trans);
                         }
-                        date = "Date :"+date.substring(0,10) +", "+ date.substring(14,19);
-                        utr = "utr no :"+utr;
-                        Trans trans = new Trans();
-                        trans.setUSN(USN);
-                        trans.setAmount(amount);
-                        trans.setDate(date);
-                        trans.setMode(mode);
-                        trans.setUtr(utr);
-                        list.add(trans);
                     }
                     Log.d("LIST DATA:", list.toString());
                     myAdapter.notifyDataSetChanged();
